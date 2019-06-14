@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A template which creates kinesis stream and firehouse
+Resources:
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+        Name: ComcastStream
+        RetentionPeriodHours: 24
+        ShardCount: 1
+  Firehouse:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+        DeliveryStreamName: ComcastFirehouse
+        DeliveryStreamType: KinesisStreamAsSource
+        KinesisStreamSourceConfiguration:
+            KinesisStreamARN:
+                  Fn::GetAtt:
+                     - "KinesisStream"
+                     - "Arn"
+            RoleARN: !GetAtt Firehoseiam.Arn
+        ExtendedS3DestinationConfiguration:
+            BucketARN: arn:aws:s3:::harshay
+            BufferingHints:
+              IntervalInSeconds: 60
+              SizeInMBs: 50
+            CompressionFormat: UNCOMPRESSED
+            Prefix: firehouse/
+            RoleARN: !GetAtt Firehoseiam.Arn
+  Firehoseiam:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - firehose.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: Firehousekinesis
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:*
+            - Kinesis:*
+            - Firehose:*
+            Resource: "*"
+

@@ -7,6 +7,9 @@ Resources:
         Name: ComcastStream
         RetentionPeriodHours: 24
         ShardCount: 1
+        StreamEncryption:
+          EncryptionType: KMS
+          KeyId: alias/aws/kinesis
   Firehouse:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
@@ -24,8 +27,29 @@ Resources:
               IntervalInSeconds: 60
               SizeInMBs: 50
             CompressionFormat: UNCOMPRESSED
+            EncryptionConfiguration:
+              NoEncryptionConfig: NoEncryption
+            ProcessingConfiguration:
+              Enabled: 'false'
             Prefix: firehouse/
+            ErrorOutputPrefix: firehose/error/
+            S3BackupMode: 'Enabled'
+            S3BackupConfiguration:
+              BucketARN: arn:aws:s3:::harshay
+              BufferingHints:
+                  IntervalInSeconds: 60
+                  SizeInMBs: 50
+              Prefix: firehousebackup/
+              CompressionFormat: UNCOMPRESSED
+              EncryptionConfiguration:
+                  NoEncryptionConfig: NoEncryption
+              RoleARN: !GetAtt Firehoseiam.Arn
+            CloudWatchLoggingOptions:
+              Enabled: 'true'
+              LogGroupName: KinesisFirehoselogs
+              LogStreamName: S3Delivery
             RoleARN: !GetAtt Firehoseiam.Arn
+
   Firehoseiam:
     Type: AWS::IAM::Role
     Properties:
